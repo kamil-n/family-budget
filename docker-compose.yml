@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   app:
-    build: ./app
+    build: ./api
     volumes:
-      - ./app/:/usr/src/app/
+      - ./api/:/code/api/
     ports:
       - 5000:5000
     env_file:
