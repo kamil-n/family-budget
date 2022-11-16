@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from api.authenticate import oauth2_scheme
 from api.db import get_db
+from api.models.user import User as UserModel
 from api.schemas.budget import Budget, BudgetIn
 from api.schemas.user import User, UserIn
 from api.services.user import add_user, create_user_budget, get_user, get_user_by_name, get_users
@@ -17,7 +18,7 @@ def create_user(
     user: UserIn = Body(...),
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-):
+) -> User:
     db_user = get_user_by_name(db, name=user.name)
     if db_user:
         raise HTTPException(
@@ -32,7 +33,7 @@ def read_users(
     limit: int = Query(100, ge=1),
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-):
+) -> list[UserModel]:
     users = get_users(db, skip=skip, limit=limit)
     return users
 
@@ -42,7 +43,7 @@ def read_user(
     user_id: int = Path(..., ge=0),
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-):
+) -> UserModel:
     db_user = get_user(db, user_id=user_id)
     if not db_user:
         raise HTTPException(
@@ -59,5 +60,5 @@ def create_budget_for_user(
     budget: BudgetIn = Body(...),
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-):
+) -> Budget:
     return create_user_budget(db=db, budget=budget, user_id=user_id)

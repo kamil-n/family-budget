@@ -1,9 +1,9 @@
 # https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional, Union
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -17,21 +17,25 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def get_user(db: Session, username: str):
+def get_user(db: Session, username: str) -> UserIn:
     user = db.query(User).filter(User.name == username).first()
     if user:
         return UserIn(**{"name": user.name, "hashed_password": user.hashed_password})
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"User '{username}' doesn't exists.",
+    )
 
 
-def authenticate_user(db: Session, username: str, password: str):
+def authenticate_user(db: Session, username: str, password: str) -> Union[bool, UserIn]:
     user = get_user(db, username)
     if not user:
         return False
@@ -40,7 +44,9 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(
+    data: dict[str, Any], expires_delta: Optional[timedelta] = None
+) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -51,7 +57,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-def get_token(db: Session, form_data):
+def get_token(db: Session, form_data: OAuth2PasswordRequestForm) -> dict[str, str]:
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -59,6 +65,7 @@ def get_token(db: Session, form_data):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    assert isinstance(user, UserIn)
     access_token_expires = timedelta(days=TOKEN_EXPIRE_DAYS)
     access_token = create_access_token(
         data={"sub": user.name}, expires_delta=access_token_expires
@@ -66,7 +73,7 @@ def get_token(db: Session, form_data):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-def get_current_user(db: Session, token: str = Depends(oauth2_scheme)):
+def get_current_user(db: Session, token: str = Depends(oauth2_scheme)) -> UserIn:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials.",
@@ -80,7 +87,7 @@ def get_current_user(db: Session, token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(db, username=token_data.username)
+    user = get_user(db, username=token_data.username)  # type: ignore [arg-type]
     if user is None:
         raise credentials_exception
     return user
