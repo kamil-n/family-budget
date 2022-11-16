@@ -1,14 +1,6 @@
 version: '3.8'
 
 services:
-  app:
-    build: ./api
-    volumes:
-      - ./api/:/code/api/
-    ports:
-      - 5000:5000
-    env_file:
-      - ./.env
   db:
     image: postgres:13-alpine
     volumes:
@@ -17,6 +9,19 @@ services:
       - POSTGRES_USER=budget_user
       - POSTGRES_PASSWORD=budget_password
       - POSTGRES_DB=budget_db
+    ports:
+      - "5432:5432"
+  app:
+    restart: always
+    build: ./api
+    depends_on:
+      - db
+    volumes:
+      - ./api/:/code/api/
+    ports:
+      - 5000:5000
+    env_file:
+      - ./.env
 
 volumes:
   postgres_data:
