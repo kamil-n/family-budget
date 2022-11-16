@@ -8,7 +8,13 @@ from api.db import get_db
 from api.models.user import User as UserModel
 from api.schemas.budget import Budget, BudgetIn
 from api.schemas.user import User, UserIn
-from api.services.user import add_user, create_user_budget, get_user, get_user_by_name, get_users
+from api.services.user import (
+    add_user,
+    create_user_budget,
+    get_user,
+    get_user_by_name,
+    get_users,
+)
 
 router = APIRouter(prefix="/users")
 
