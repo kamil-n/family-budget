@@ -1,9 +1,10 @@
 import uvicorn
-from config import ApiSettings
-from db import Base, engine
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from routers import budget, token, user
+
+from api.config import ApiSettings
+from api.db import Base, engine
+from api.routers import budget, token, user
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI()

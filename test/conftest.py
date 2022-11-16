@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy_utils import database_exists, drop_database
 from typing_extensions import ParamSpec
 
-from api.config import SQLALCHEMY_DATABASE_URL
+from api.config import DBSettings
 from api.db import Base, get_db
 from api.main import app
 
@@ -16,7 +16,11 @@ P = ParamSpec("P")
 
 @pytest.fixture(scope="module")
 def session_local() -> Generator[Session, None, None]:
-    test_db_url = SQLALCHEMY_DATABASE_URL
+    settings = DBSettings()
+    test_db_url = (
+        f"postgresql://{settings.db_user}:{settings.db_pass}@"
+        f"{settings.db_test_host}:{settings.db_port}/{settings.db_database}"
+    )
     engine = create_engine(test_db_url)
 
     assert not database_exists(
@@ -46,3 +50,7 @@ def temp_db(f: Callable[P, T]) -> Callable[P, T]:
         app.dependency_overrides[get_db] = get_db
 
     return func  # type: ignore [return-value]
+
+
+# in the future might need something like
+# https://gist.github.com/kissgyorgy/e2365f25a213de44b9a2
