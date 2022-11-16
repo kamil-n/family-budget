@@ -8,11 +8,12 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from api.config import ALGORITHM, SECRET_KEY, TOKEN_EXPIRE_DAYS
+from api.config import AuthSettings
 from api.models.user import User
 from api.schemas.token import TokenData
 from api.schemas.user import UserIn
 
+settings = AuthSettings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -53,7 +54,9 @@ def create_access_token(
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.auth_secret, algorithm=settings.auth_algo
+    )
     return encoded_jwt
 
 
@@ -66,7 +69,7 @@ def get_token(db: Session, form_data: OAuth2PasswordRequestForm) -> dict[str, st
             headers={"WWW-Authenticate": "Bearer"},
         )
     assert isinstance(user, UserIn)
-    access_token_expires = timedelta(days=TOKEN_EXPIRE_DAYS)
+    access_token_expires = timedelta(days=settings.auth_token_expire_days)
     access_token = create_access_token(
         data={"sub": user.name}, expires_delta=access_token_expires
     )
@@ -80,7 +83,9 @@ def get_current_user(db: Session, token: str = Depends(oauth2_scheme)) -> UserIn
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token, settings.auth_secret, algorithms=[settings.auth_algo]
+        )
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception

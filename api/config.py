@@ -1,13 +1,26 @@
-import os
+from pydantic import BaseSettings
 
-from dotenv import load_dotenv
 
-load_dotenv()
+class SettingsEnv(BaseSettings):
+    class Config:
+        env_file = ".env"
 
-ENV = os.getenv("ENV", "dev")
-HOST = os.getenv("HOST", "")
-PORT = int(os.getenv("PORT", 0))
-SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL", "")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-SECRET_KEY = os.getenv("SECRET_KEY", "")
-TOKEN_EXPIRE_DAYS = int(os.getenv("TOKEN_EXPIRE_DAYS", 1))
+
+class ApiSettings(SettingsEnv):
+    env: str
+    ap_host: str
+    ap_port: int
+
+
+class DBSettings(SettingsEnv):
+    db_user: str
+    db_pass: str
+    db_host: str
+    db_port: int
+    db_database: str
+
+
+class AuthSettings(SettingsEnv):
+    auth_algo: str
+    auth_secret: str
+    auth_token_expire_days: int
