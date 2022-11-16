@@ -10,7 +10,6 @@ router = APIRouter(prefix="/token")
 
 @router.post("")
 def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
     return get_token(db, form_data)

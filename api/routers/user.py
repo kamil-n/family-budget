@@ -5,15 +5,9 @@ from sqlalchemy.orm import Session
 
 from api.authenticate import oauth2_scheme
 from api.db import get_db
-from api.schemas.user import User, UserIn
 from api.schemas.budget import Budget, BudgetIn
-from api.services.user import (
-    add_user,
-    get_user,
-    get_user_by_name,
-    get_users,
-    create_user_budget,
-)
+from api.schemas.user import User, UserIn
+from api.services.user import add_user, create_user_budget, get_user, get_user_by_name, get_users
 
 router = APIRouter(prefix="/users")
 

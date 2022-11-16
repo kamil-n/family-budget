@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 
-from api.models.user import User
 from api.models.budget import Budget
-from api.schemas.user import UserIn
+from api.models.user import User
 from api.schemas.budget import BudgetIn
+from api.schemas.user import UserIn
 
 
 def add_user(db: Session, user: UserIn):
