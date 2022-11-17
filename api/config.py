@@ -16,9 +16,9 @@ class DBSettings(SettingsEnv):
     db_user: str
     db_pass: str
     db_host: str
-    db_test_host: str
     db_port: int
     db_database: str
+    db_test_database: str
 
 
 class AuthSettings(SettingsEnv):

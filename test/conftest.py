@@ -1,14 +1,14 @@
-from typing import Callable, Generator, TypeVar
+# https://fastapi.tiangolo.com/advanced/testing-database/
+from typing import Generator, TypeVar
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy_utils import database_exists, drop_database
+from sqlalchemy_utils import create_database, database_exists, drop_database
 from typing_extensions import ParamSpec
 
 from api.config import DBSettings
-from api.db import Base, get_db
-from api.main import app
+from api.db import Base
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -19,37 +19,20 @@ def session_local() -> Generator[Session, None, None]:
     settings = DBSettings()
     test_db_url = (
         f"postgresql://{settings.db_user}:{settings.db_pass}@"
-        f"{settings.db_test_host}:{settings.db_port}/{settings.db_database}"
+        f"{settings.db_host}:{settings.db_port}/{settings.db_database}"
     )
     engine = create_engine(test_db_url)
 
     assert not database_exists(
         test_db_url
     ), "Test database already exists. Aborting tests."
+    create_database(test_db_url)
 
-    Base.metadata.create_all(engine)
     session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.create_all(engine)
 
     yield session_local
     drop_database(test_db_url)
-
-
-def temp_db(f: Callable[P, T]) -> Callable[P, T]:
-    def func(  # type: ignore [return]
-        session_local: Session, *args: P.args, **kwargs: P.kwargs
-    ) -> T:
-        def override_get_db() -> Generator[Session, None, None]:
-            try:
-                db = session_local()
-                yield db
-            finally:
-                db.close()
-
-        app.dependency_overrides[get_db] = override_get_db
-        f(*args, **kwargs)
-        app.dependency_overrides[get_db] = get_db
-
-    return func  # type: ignore [return-value]
 
 
 # in the future might need something like
